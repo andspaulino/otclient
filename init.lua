@@ -74,8 +74,8 @@ if ENABLE_SERVERS then
         -- @field useAuthenticator Enables additional authentication layer
         --
         ["http://127.0.0.1/login.php"] = {
-            port = 80,
-            protocol = 1511,
+            port = 8088,
+            protocol = 1525,
             httpLogin = true,
             useAuthenticator = false
         },
