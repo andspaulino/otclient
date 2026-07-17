@@ -554,9 +554,15 @@ function rewardWallController:onClickDisplayWindowsPickRewardWindow(event)
         end
 
     elseif event.target.bundleType == bundleType.XPBOOST or event.target.bundleType == bundleType.PREY then
-        hide()
-        actualUsed = {}
-        managerMessageBoxWindow(CONST_WINDOWS_BOX.CONFIRMATION_IRA)
+        if bonusShrine == OPEN_WINDOWS.SHRINE then
+            actualUsed = {}
+            g_game.requestGetRewardDaily(bonusShrine, actualUsed)
+            hide()
+        else
+            hide()
+            actualUsed = {}
+            managerMessageBoxWindow(CONST_WINDOWS_BOX.CONFIRMATION_IRA)
+        end
     end
 end
 
@@ -679,7 +685,13 @@ function onClickBtnOk()
     if table.empty(actualUsed) then
         return
     end
-    managerMessageBoxWindow(CONST_WINDOWS_BOX.CONFIRMATION_IRA)
+    if bonusShrine == OPEN_WINDOWS.SHRINE then
+        g_game.requestGetRewardDaily(bonusShrine, actualUsed)
+        destroyPickReward(true)
+        hide()
+    else
+        managerMessageBoxWindow(CONST_WINDOWS_BOX.CONFIRMATION_IRA)
+    end
 end
 
 function destroyPickReward(bool)
@@ -723,13 +735,13 @@ function onTextChangeChangeNumber(getPanel)
     local text = string.format("You have selected [color=%s]%d[/color] of %d reward items", color, alreadyUsed,
         getPanel.itemsToSelect)
     windowsPickWindow:getChildById('rewardLabel'):parseColoredText(text)
-    getPanel:getChildById('weight'):setText(string.format("%.2f oz", actualUsed[itemId] * getPanel.totalWeight))
+    getPanel:getChildById('weight'):setText(string.format("%.2f oz", actualUsed[itemId] * getPanel.totalWeight / 100))
     local totalWeight = 0
     for i, widget in pairs(getPanel:getParent():getChildren()) do
         local weightLabel = widget:getChildById('weight')
         if weightLabel then
             local weightText = weightLabel:getText()
-            local weightValue = tonumber(weightText:match("(%d+)"))
+            local weightValue = tonumber(weightText:gsub(" oz", ""))
             if weightValue then
                 totalWeight = totalWeight + weightValue
             end
