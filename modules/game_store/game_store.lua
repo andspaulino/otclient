@@ -117,11 +117,16 @@ local function getPageLabelHistory()
     return tonumber(currentPage), tonumber(pageCount)
 end
 
+local function joinUrl(baseUrl, path)
+    return baseUrl:gsub("/+$", "") .. "/" .. path:gsub("^/+", "")
+end
+
 local function setImagenHttp(widget, url, isIcon)
     if GameStore.website.IMAGES_URL then
-        HTTP.downloadImage(GameStore.website.IMAGES_URL .. url, function(path, err)
+        local imageUrl = joinUrl(GameStore.website.IMAGES_URL, url)
+        HTTP.downloadImage(imageUrl, function(path, err)
             if err then
-                g_logger.warning("HTTP error: " .. err .. " - " .. GameStore.website.IMAGES_URL .. url)
+                g_logger.warning("HTTP error: " .. err .. " - " .. imageUrl)
                 if isIcon then
                     widget:setIcon("/game_store/images/dynamic-image-error")
                 else
