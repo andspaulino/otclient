@@ -269,6 +269,9 @@ function show()
     connect(g_app, {
         onClose = tryExit
     })
+    connect(LocalPlayer, {
+        onPositionChange = onLocalPlayerPositionChange
+    })
     modules.client_background.hide()
     gameRootPanel:show()
     gameRootPanel:focus()
@@ -306,6 +309,9 @@ function hide()
 
     disconnect(g_app, {
         onClose = tryExit
+    })
+    disconnect(LocalPlayer, {
+        onPositionChange = onLocalPlayerPositionChange
     })
     logoutButton:setTooltip(tr('Exit'))
 
@@ -1505,9 +1511,70 @@ function processMouseAction(menuPosition, mouseButton, autoWalkPos, lookThing, u
     return false
 end
 
+local movementKeys = {
+    ['W'] = North, ['A'] = West, ['S'] = South, ['D'] = East,
+    ['Q'] = NorthWest, ['E'] = NorthEast, ['Z'] = SouthWest, ['C'] = SouthEast,
+    ['Up'] = North, ['Down'] = South, ['Left'] = West, ['Right'] = East,
+    ['Numpad1'] = SouthWest, ['Numpad2'] = South, ['Numpad3'] = SouthEast,
+    ['Numpad4'] = West, ['Numpad6'] = East, ['Numpad7'] = NorthWest,
+    ['Numpad8'] = North, ['Numpad9'] = NorthEast
+}
+
+local function getMovementDirection(key)
+    if not key then return nil end
+    if key == 'Up' or key == 'Down' or key == 'Left' or key == 'Right' then
+        return movementKeys[key]
+    end
+    if key:sub(1, 6) == 'Numpad' then
+        return movementKeys[key]
+    end
+    if not modules.game_console.isChatEnabled() then
+        if key == 'W' or key == 'A' or key == 'S' or key == 'D' or
+           key == 'Q' or key == 'E' or key == 'Z' or key == 'C' then
+            return movementKeys[key]
+        end
+    end
+    return nil
+end
+
+local function onLocalPlayerPositionChange(player, newPos, oldPos)
+    if countWindow then
+        countWindow:destroy()
+        countWindow = nil
+    end
+end
+
 local function handleItemInteraction(item, widget, callback)
     local count = item:getCount()
     widget.hotkeyBlock = modules.game_hotkeys.createHotkeyBlock("stackable_item_dialog")
+
+    widget.onKeyDown = function(self, keyCode, keyboardModifiers)
+        local key = KeyCodeDescs[keyCode]
+        local dir = getMovementDirection(key)
+        if dir then
+            local ctrlPressed = bit.band(keyboardModifiers, KeyboardCtrlModifier) ~= 0
+            local shiftPressed = bit.band(keyboardModifiers, KeyboardShiftModifier) ~= 0
+            local altPressed = bit.band(keyboardModifiers, KeyboardAltModifier) ~= 0
+            local noModifiers = (keyboardModifiers == KeyboardNoModifier)
+
+            if noModifiers or shiftPressed then
+                -- Close widget and walk
+                widget:destroy()
+                countWindow = nil
+                widget = nil
+                modules.game_walk.smartWalk(dir)
+                return true
+            elseif ctrlPressed and not shiftPressed and not altPressed then
+                -- Close widget and turn
+                widget:destroy()
+                countWindow = nil
+                widget = nil
+                g_game.turn(dir)
+                return true
+            end
+        end
+        return false
+    end
     local itembox = widget:getChildById('item')
     local scrollbar = widget:getChildById('countScrollBar')
     itembox:setItemId(item:getId())
@@ -2033,6 +2100,11 @@ function toggleInternalFocus()
             modules.game_analyser.toggleBossCDFocus(false)
         end
     end
+    if countWindow then
+        countWindow:destroy()
+        countWindow = nil
+    end
+    gameRootPanel:focus()
 end
 
 function isInternalLocked()
