@@ -335,7 +335,7 @@ function create(player, outfitList, creatureMount, mountList, familiarList, wing
 
     }
 
-    window = g_ui.displayUI("outfitwindow")
+    window = g_ui.displayUI("/game_outfit/outfitwindow")
 
     floor = window.preview.panel.floor
     for i = 1, floorTiles * floorTiles do
