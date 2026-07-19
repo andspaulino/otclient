@@ -83,7 +83,9 @@ local BOX_CONFIGS = {
         title = "Confirmation of using Instant Reward Access",
         content = "Remember! You can always collect your daily reward for free by visiting a reward shrine!\n\nYou Currently own 3x Instant Reward Access. Do you really want to use one to claim your daily reward now?",
         okCallback = function()
-            g_game.requestGetRewardDaily(bonusShrine, actualUsed)
+            -- Canary expects 0 = shrine / 1 = panel (inverse of the OpenRewardWall byte
+            -- stored in bonusShrine, where 1 = shrine / 0 = panel)
+            g_game.requestGetRewardDaily(bonusShrine == OPEN_WINDOWS.SHRINE and 0 or 1, actualUsed)
             if windowsPickWindow then
                 windowsPickWindow:destroy()
                 windowsPickWindow = nil
@@ -686,12 +688,17 @@ function onClickBtnOk()
         return
     end
     if bonusShrine == OPEN_WINDOWS.SHRINE then
-        g_game.requestGetRewardDaily(bonusShrine, actualUsed)
-        destroyPickReward(true)
-        hide()
-    else
-        managerMessageBoxWindow(CONST_WINDOWS_BOX.CONFIRMATION_IRA)
+        -- Collecting at a reward shrine is free: no Instant Reward Access confirmation.
+        -- Canary expects 0 = shrine on the collect packet.
+        g_game.requestGetRewardDaily(0, actualUsed)
+        if windowsPickWindow then
+            windowsPickWindow:destroy()
+            windowsPickWindow = nil
+        end
+        show()
+        return
     end
+    managerMessageBoxWindow(CONST_WINDOWS_BOX.CONFIRMATION_IRA)
 end
 
 function destroyPickReward(bool)
